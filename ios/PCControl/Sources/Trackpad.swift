@@ -53,7 +53,7 @@ final class TrackpadSurface: UIView {
         let (x,y) = motion.consume(dx:Double(pendingMotion.x),dy:Double(pendingMotion.y),scale:speed)
         pendingMotion = .zero; if x != 0 || y != 0 { onMotion?(x,y) }
         let direction = natural ? 1.0 : -1.0
-        let (sx,sy) = scroll.consume(dx:Double(pendingScroll.x),dy:Double(pendingScroll.y),scale:3.2*direction)
+        let (sx,sy) = scroll.consume(dx:-Double(pendingScroll.x),dy:Double(pendingScroll.y),scale:3.2*direction)
         pendingScroll = .zero; if sx != 0 || sy != 0 { onScroll?(sx,sy) }
     }
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -64,6 +64,7 @@ final class TrackpadSurface: UIView {
                 guard let self, self.fingers.count == 1, !self.wasTwo, self.moved < 6 else { return }
                 self.flush(); self.dragging = true; self.onDrag?(true)
             }
+            if let timer = longPress { RunLoop.main.add(timer,forMode:.common) }
         }
         fingers.formUnion(touches)
         if fingers.count > 1 { wasTwo = true; longPress?.invalidate(); if dragging { flush(); dragging = false; onDrag?(false) } }
