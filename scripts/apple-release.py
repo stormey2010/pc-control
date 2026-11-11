@@ -78,7 +78,7 @@ def main():
             print("Processed build added to internal TestFlight group.")
         notes = api("GET", f"/v1/builds/{args.build}/betaBuildLocalizations")["data"]
         english = next((x for x in notes if x["attributes"].get("locale") == "en-US"), None)
-        text = "First native release: responsive trackpad, tap/double-tap, two-finger scrolling and right-click, hold to drag, Unicode keyboard, shortcuts, media and volume controls, per-display brightness, secure QR/file pairing, and cancellable shutdown. This build was compiled and signed without automated tests as requested."
+        text = "Nearby PC pairing: tap a computer on your Wi-Fi, enter the four-digit code shown on its screen, and reconnect automatically next time. Fixes the JSON message error affecting controls in the previous build. Includes trackpad, keyboard, volume, media, brightness, and cancellable shutdown. Compiled and signed without automated tests as requested."
         if english:
             api("PATCH", "/v1/betaBuildLocalizations/" + english["id"], json={"data": {"type": "betaBuildLocalizations", "id": english["id"], "attributes": {"whatsNew": text}}})
         else:

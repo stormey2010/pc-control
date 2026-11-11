@@ -133,3 +133,14 @@ Keep movement handling off the main actor where practical; publish state to Swif
 - `scripts/`: build/install, firewall, status, removal, crash recovery/idle checks.
 
 To rotate pairing, stop/uninstall the agent with `-RemovePairing`, then reinstall and explicitly pair the phone again. Do not silently accept a changed TLS certificate. For regular updates use `Install.ps1 -SkipFirewall`, preserving credentials. No server at 192.168.4.65 is part of the runtime architecture; it was used only as an independent LAN test client.
+
+
+## Nearby pairing
+
+Bonjour `_pccontrol._tcp.local.` now advertises `pin` (the public TLS certificate SHA-256) alongside `id` and `tls=1`. Connect to an advertised local HTTPS endpoint with the advertised pin.
+
+- `POST /v1/pair/start` with `{}` needs no bearer token. It shows a code on the PC and returns `{requestId, deviceId, expiresIn:120}`. Requests are limited to one per 30 seconds.
+- `POST /v1/pair/confirm` with `{requestId,code}` returns the private connection JSON after a correct four-digit code. Requests are tied to the requesting IP, expire after two minutes, and allow five guesses. A successful request consumes the code and closes the window.
+- Persist the returned token and certificate pin, then use the existing authenticated command/WebSocket API. Rediscover by device ID when the LAN address changes. No further pairing request is needed.
+
+The iOS app stores this identity in Keychain. WebSocket JSON commands should be sent as text frames; binary JSON is also accepted for earlier clients.

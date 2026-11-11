@@ -43,6 +43,7 @@ func (s *server) pairStart(w http.ResponseWriter, r *http.Request) {
 	req := &pairRequest{ID: hex.EncodeToString(nonce), Code: fmtCode(n.Int64()), Host: host, Expires: time.Now().Add(2 * time.Minute)}
 	s.pairingRequest = req
 	s.pairingLast = time.Now()
+	closePairCode()
 	go showPairCode(req.Code)
 	writeJSON(w, 200, map[string]any{"requestId": req.ID, "expiresIn": 120, "deviceId": s.cfg.DeviceID})
 }
@@ -55,7 +56,7 @@ func fmtCode(n int64) string {
 	return string(b)
 }
 func showPairCode(code string) {
-	title, _ := windows.UTF16PtrFromString("PC Control — Pair your iPhone")
+	title, _ := windows.UTF16PtrFromString("PC Control - Pair your iPhone")
 	message, _ := windows.UTF16PtrFromString("Enter this code on your iPhone:\n\n                   " + code + "\n\nThis code expires in 2 minutes.\nIf you did not request this, ignore this window.")
 	user32.NewProc("MessageBoxTimeoutW").Call(0, uintptr(unsafe.Pointer(message)), uintptr(unsafe.Pointer(title)), 0x50040, 0, 120000)
 }
@@ -87,7 +88,16 @@ func (s *server) pairConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.pairingRequest = nil
+	closePairCode()
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Write(b)
+}
+
+func closePairCode() {
+	title, _ := windows.UTF16PtrFromString("PC Control - Pair your iPhone")
+	hwnd, _, _ := user32.NewProc("FindWindowW").Call(0, uintptr(unsafe.Pointer(title)))
+	if hwnd != 0 {
+		user32.NewProc("PostMessageW").Call(hwnd, 0x10, 0, 0)
+	}
 }
