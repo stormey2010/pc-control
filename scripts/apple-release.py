@@ -69,8 +69,13 @@ def main():
         build = api("GET", "/v1/builds/" + args.build)["data"]
         if build["attributes"].get("processingState") != "VALID":
             raise SystemExit("Build is not yet processed and valid")
-        api("POST", f"/v1/betaGroups/{group['id']}/relationships/builds", json={"data": [{"type": "builds", "id": args.build}]})
-        print("Processed build added to internal TestFlight group.")
+        # App Store Connect's default Team group can have access to every build.
+        # Its relationship is read-only; do not try to attach it again.
+        if group["attributes"].get("hasAccessToAllBuilds"):
+            print("Build is available to the internal Team group automatically.")
+        else:
+            api("POST", f"/v1/builds/{args.build}/relationships/betaGroups", json={"data": [{"type": "betaGroups", "id": group["id"]}]})
+            print("Processed build added to internal TestFlight group.")
         notes = api("GET", f"/v1/builds/{args.build}/betaBuildLocalizations")["data"]
         english = next((x for x in notes if x["attributes"].get("locale") == "en-US"), None)
         text = "First native release: responsive trackpad, tap/double-tap, two-finger scrolling and right-click, hold to drag, Unicode keyboard, shortcuts, media and volume controls, per-display brightness, secure QR/file pairing, and cancellable shutdown. This build was compiled and signed without automated tests as requested."
