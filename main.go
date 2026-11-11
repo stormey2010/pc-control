@@ -102,13 +102,16 @@ func run(dir string, supervise, setup bool) error {
 	api.dataDir = dir
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", api.health)
+	mux.HandleFunc("POST /v1/pair/start", api.pairStart)
+	mux.HandleFunc("POST /v1/pair/confirm", api.pairConfirm)
 	mux.HandleFunc("GET /v1/info", api.auth(api.info))
 	mux.HandleFunc("GET /v1/diagnostics", api.auth(api.diagnostics))
 	mux.HandleFunc("POST /v1/command", api.auth(api.command))
 	mux.HandleFunc("GET /v1/ws", api.auth(api.websocket))
 	srv := &http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: api.localOnly(mux), TLSConfig: &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{cert}}, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 8192, ErrorLog: log.New(fixedLogWriter{}, "", 0)}
-	// Discovery contains only public metadata. Pairing credentials never leave disk.
-	z, err := zeroconf.Register(cfg.Name+"-"+cfg.DeviceID[:8], "_pccontrol._tcp", "local.", cfg.Port, []string{"version=1", "id=" + cfg.DeviceID, "tls=1", "path=/v1/ws"}, nil)
+	// Discovery exposes the public certificate fingerprint, never credentials.
+	fingerprint := sha256.Sum256(cert.Certificate[0])
+	z, err := zeroconf.Register(cfg.Name+"-"+cfg.DeviceID[:8], "_pccontrol._tcp", "local.", cfg.Port, []string{"version=1", "id=" + cfg.DeviceID, "tls=1", "path=/v1/ws", "pin=" + hex.EncodeToString(fingerprint[:])}, nil)
 	if err == nil {
 		defer z.Shutdown()
 	} else {

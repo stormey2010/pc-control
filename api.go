@@ -70,20 +70,23 @@ func response(c Command, v any, err error) Reply {
 }
 
 type server struct {
-	cfg        Config
-	dataDir    string
-	tokenHash  [32]byte
-	started    time.Time
-	socket     atomic.Bool
-	slots      chan struct{}
-	input      sync.Mutex
-	audio      sync.Mutex
-	displays   sync.Mutex
-	power      sync.Mutex
-	shutdown   *time.Timer
-	shutdownAt time.Time
-	authMu     sync.Mutex
-	attempts   map[string]authWindow
+	pairingMu      sync.Mutex
+	pairingRequest *pairRequest
+	pairingLast    time.Time
+	cfg            Config
+	dataDir        string
+	tokenHash      [32]byte
+	started        time.Time
+	socket         atomic.Bool
+	slots          chan struct{}
+	input          sync.Mutex
+	audio          sync.Mutex
+	displays       sync.Mutex
+	power          sync.Mutex
+	shutdown       *time.Timer
+	shutdownAt     time.Time
+	authMu         sync.Mutex
+	attempts       map[string]authWindow
 }
 type authWindow struct {
 	start time.Time
@@ -342,8 +345,8 @@ func (s *server) websocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = conn.SetReadDeadline(time.Now().Add(45 * time.Second))
-		if kind != websocket.TextMessage {
-			emit(response(Command{}, nil, invalid("Text JSON messages required")))
+		if kind != websocket.TextMessage && kind != websocket.BinaryMessage {
+			emit(response(Command{}, nil, invalid("JSON messages required")))
 			continue
 		}
 		c, e := decodeCommand(b)

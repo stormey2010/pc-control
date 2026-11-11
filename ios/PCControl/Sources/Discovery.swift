@@ -7,6 +7,7 @@ struct NearbyPC: Identifiable, Equatable {
     let id: String
     let name: String
     let endpoints: [URL]
+    let fingerprint: String?
 }
 
 @MainActor final class Discovery: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
@@ -50,6 +51,6 @@ struct NearbyPC: Identifiable, Equatable {
         urls.sort { ($0.host?.hasPrefix("192.168.") == true ? 0 : 1) < ($1.host?.hasPrefix("192.168.") == true ? 0 : 1) }
         let suffix = "-" + String(id.prefix(8))
         let name = service.name.hasSuffix(suffix) ? String(service.name.dropLast(suffix.count)) : service.name
-        return NearbyPC(id:id,name:name,endpoints:urls)
+        return NearbyPC(id:id,name:name,endpoints:urls,fingerprint:txt["pin"].flatMap { String(data:$0,encoding:.utf8) })
     }
 }

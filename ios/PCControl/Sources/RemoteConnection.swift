@@ -45,7 +45,9 @@ import RemoteCore
         // if iOS suspends us before this final message reaches the wire.
         if let old { Task {
             let deadline = Task { try? await Task.sleep(for:.milliseconds(300)); if !Task.isCancelled { old.cancel(with:.goingAway,reason:nil); oldSession?.invalidateAndCancel() } }
-            try? await old.send(.data(try JSONEncoder().encode(Command("input.release"))))
+            if let json = try? JSONEncoder().encode(Command("input.release")) {
+                try? await old.send(.string(String(decoding:json,as:UTF8.self)))
+            }
             deadline.cancel(); old.cancel(with:.goingAway,reason:nil); oldSession?.invalidateAndCancel()
         } } else { oldSession?.invalidateAndCancel() }
     }
@@ -155,7 +157,10 @@ import RemoteCore
             guard let self else { return }
             defer { if self.generation == current { self.sendTask = nil } }
             while !Task.isCancelled, self.generation == current, let c = self.queue.popFirst() {
-                do { try await ws.send(.data(try JSONEncoder().encode(c))) }
+                do {
+                    let json = try JSONEncoder().encode(c)
+                    try await ws.send(.string(String(decoding:json,as:UTF8.self)))
+                }
                 catch { ws.cancel(with:.goingAway,reason:nil); return }
             }
         }
