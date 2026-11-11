@@ -231,10 +231,10 @@ struct SettingsView: View {
                     Toggle("Haptic clicks",isOn:$model.hapticClicks)
                     NavigationLink { GestureHelpContent().navigationTitle("Trackpad gestures").navigationBarTitleDisplayMode(.inline) } label: { Label("Trackpad gestures",systemImage:"hand.draw") }
                 }
-                Section("Power") {
+                Section {
                     Button { lock = true } label: { Label("Lock PC",systemImage:"lock") }.disabled(!model.connected || model.preview)
                     Button(role:.destructive) { shutdown = true } label: { Label("Shut down PC",systemImage:"power") }.disabled(!model.connected || model.preview)
-                } footer: { Text("Shutdown has a 30-second countdown you can cancel.") }
+                } header: { Text("Power") } footer: { Text("Shutdown has a 30-second countdown you can cancel.") }
                 Section("Pairing") {
                     if let p = model.pairing {
                         LabeledContent("Secure connection",value:"Certificate pinned")
